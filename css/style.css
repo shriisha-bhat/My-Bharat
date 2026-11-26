@@ -123,3 +123,10 @@ select option { background: var(--panel); color: var(--ink); }
 }
 
 .panel-foot::before { top: 0; }
+
+/* 3D state map hover label */
+.state-tip { position: fixed; left: 0; top: 0; z-index: 30; pointer-events: none; padding: 5px 9px; border-radius: 6px;
+  background: rgba(10, 8, 6, .88); color: #fff; font: 600 13px/1.3 Inter, system-ui, sans-serif; white-space: nowrap;
+  border: 1px solid rgba(255, 210, 31, .5); }
+.state-tip[hidden] { display: none; }
+@media (hover: none) { .state-tip { display: none; } }

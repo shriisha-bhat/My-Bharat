@@ -22,7 +22,7 @@ export const STR = {
     privacy: "No sign-up. No personal data collected or stored.", theme: "Art theme", mapStyle: "Globe look",
     satellite: "Satellite", street: "Map", night: "Night", terrain3d: "3D terrain", followState: "Follow the state",
     distanceNote: "Distances are straight-line × 1.3 for road estimate.", noResults: "No places match these filters.",
-    reset: "Reset filters", flyIndia: "Whole India",
+    states3d: "3D state map", tapState: "tap to explore", reset: "Reset filters", flyIndia: "Whole India",
   },
   kn: {
     tagline: "ಬನ್ನಿ, ಭಾರತ ನೋಡೋಣ",
@@ -46,7 +46,7 @@ export const STR = {
     privacy: "ನೋಂದಣಿ ಇಲ್ಲ. ಯಾವುದೇ ವೈಯಕ್ತಿಕ ಮಾಹಿತಿ ಸಂಗ್ರಹಿಸುವುದಿಲ್ಲ.", theme: "ಕಲಾ ಥೀಮ್", mapStyle: "ಗ್ಲೋಬ್ ನೋಟ",
     satellite: "ಉಪಗ್ರಹ", street: "ನಕ್ಷೆ", night: "ರಾತ್ರಿ", terrain3d: "3D ಭೂಪ್ರದೇಶ", followState: "ರಾಜ್ಯದ ಕಲೆ ಅನುಸರಿಸಿ",
     distanceNote: "ದೂರ = ನೇರ ದೂರ × 1.3 (ರಸ್ತೆ ಅಂದಾಜು).", noResults: "ಈ ಆಯ್ಕೆಗಳಿಗೆ ಸ್ಥಳಗಳಿಲ್ಲ.",
-    reset: "ಮರುಹೊಂದಿಸಿ", flyIndia: "ಇಡೀ ಭಾರತ",
+    states3d: "3D ರಾಜ್ಯ ನಕ್ಷೆ", tapState: "ಒತ್ತಿ ನೋಡಿ", reset: "ಮರುಹೊಂದಿಸಿ", flyIndia: "ಇಡೀ ಭಾರತ",
   },
   hi: {
     tagline: "आइए, भारत देखें",
@@ -70,7 +70,7 @@ export const STR = {
     privacy: "कोई साइन-अप नहीं। कोई निजी जानकारी एकत्र या संग्रहीत नहीं।", theme: "कला थीम", mapStyle: "ग्लोब रूप",
     satellite: "उपग्रह", street: "नक्शा", night: "रात", terrain3d: "3D भू-भाग", followState: "राज्य की कला",
     distanceNote: "दूरी = सीधी दूरी × 1.3 (सड़क अनुमान)।", noResults: "इन फ़िल्टर से कोई जगह नहीं मिली।",
-    reset: "रीसेट", flyIndia: "पूरा भारत",
+    states3d: "3D राज्य नक्शा", tapState: "देखने के लिए टैप करें", reset: "रीसेट", flyIndia: "पूरा भारत",
   },
 };
 

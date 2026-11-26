@@ -6,6 +6,7 @@ import { ADS, AD_CONTACT } from "../data/ads.js";
 import { STR, MONTHS, REGION_NAMES } from "./i18n.js";
 import { THEMES, applyTheme } from "./themes.js";
 import { planTrip, roadKm } from "./planner.js";
+import { STATE_SHAPES } from "../data/india-states.js";
 
 // ─────────────────────────── state ───────────────────────────
 // Everything lives in memory only. No cookies, no localStorage, no analytics.
@@ -16,7 +17,7 @@ const S = {
   from: null,                       // {name, lat, lng}
   pinned: [],                       // destination objects
   tripRegions: new Set(),
-  theme: "follow", mapStyle: "satellite", terrain: false,
+  theme: "follow", mapStyle: "satellite", terrain: false, states3d: true,
   lastTrip: null,
 };
 const $ = (s) => document.querySelector(s);
@@ -92,6 +93,22 @@ function addOverlays() {
   map.addSource("route", { type: "geojson", data: fc([]) });
   map.addSource("stops", { type: "geojson", data: fc([]) });
 
+  // 3D India: every state is a raised block; the chosen one stands taller and the rest dim.
+  map.addSource("states", { type: "geojson", data: STATE_SHAPES, promoteId: "code" });
+  map.addSource("state-names", { type: "geojson", data: fc(Object.entries(STATES).map(([code, s]) =>
+    ({ type: "Feature", geometry: { type: "Point", coordinates: [s[5], s[4]] }, properties: { code } }))) });
+  map.addLayer({ id: "state-3d", type: "fill-extrusion", source: "states", maxzoom: 7.5,
+    paint: { "fill-extrusion-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.82, 5.5, 0.6, 7.5, 0] } });
+  map.addLayer({ id: "state-line", type: "line", source: "states",
+    paint: { "line-color": "#fff3d6", "line-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.5, 8, 0.25], "line-width": 0.8 } });
+  map.addLayer({ id: "state-sel-line", type: "line", source: "states", filter: ["==", ["get", "code"], ""],
+    paint: { "line-color": "#ffd21f", "line-width": ["interpolate", ["linear"], ["zoom"], 4, 2, 9, 3.5] } });
+  map.addLayer({ id: "state-name", type: "symbol", source: "state-names", minzoom: 3.6, maxzoom: 6.5,
+    layout: { "text-field": ["get", "label"], "text-font": ["Noto Sans Bold"], "text-size": ["interpolate", ["linear"], ["zoom"], 3.6, 10, 6, 14],
+      "text-allow-overlap": false, "text-padding": 2 },
+    paint: { "text-color": "#fff", "text-halo-color": "rgba(0,0,0,.75)", "text-halo-width": 1.6 } });
+  paintStates();
+
   map.addLayer({ id: "route-line", type: "line", source: "route",
     paint: { "line-color": "#ffd21f", "line-width": 3, "line-dasharray": [2, 1.5], "line-opacity": 0.9 } });
   map.addLayer({ id: "dest-dot", type: "circle", source: "dest",
@@ -119,6 +136,64 @@ function addOverlays() {
 
 map.on("style.load", addOverlays);
 map.on("load", () => !S.lastTrip && map.flyTo({ center: [80.5, 22], zoom: isMobile() ? 3.2 : 3.9, duration: 3500, essential: true }));
+
+// ─────────────────────────── 3D states ───────────────────────────
+const SHAPE_BY = new Map(STATE_SHAPES.features.map((f) => [f.properties.code, f]));
+function stateBounds(code) {
+  const b = new maplibregl.LngLatBounds();
+  const walk = (c) => (typeof c[0] === "number" ? b.extend(c) : c.forEach(walk));
+  walk(SHAPE_BY.get(code).geometry.coordinates);
+  return b;
+}
+function paintStates() {
+  if (!map.getLayer("state-3d")) return;
+  const sel = S.state, on = S.states3d;
+  const hover = ["boolean", ["feature-state", "hover"], false];
+  map.setLayoutProperty("state-3d", "visibility", on ? "visible" : "none");
+  map.setLayoutProperty("state-name", "visibility", on ? "visible" : "none");
+  map.setPaintProperty("state-3d", "fill-extrusion-color", ["case", hover, "#ffd21f",
+    sel ? ["case", ["==", ["get", "code"], sel], ["get", "c"], "#2a2a2a"] : ["get", "c"]]);
+  map.setPaintProperty("state-3d", "fill-extrusion-height", ["case",
+    sel ? ["==", ["get", "code"], sel] : false, 60000, hover, 34000, sel ? 6000 : 22000]);
+  map.setFilter("state-sel-line", ["==", ["get", "code"], sel || ""]);
+  map.getSource("state-names").setData(fc(Object.entries(STATES).map(([code, s]) => ({ type: "Feature",
+    geometry: { type: "Point", coordinates: [s[5], s[4]] }, properties: { code, label: stateName(code) } }))));
+}
+function selectState(code, { fly = true } = {}) {
+  S.state = code || "";
+  if (S.state && S.region && STATES[S.state][3] !== S.region) S.region = "";
+  fillSelects(); refresh(); paintStates();
+  if (!S.state) return;
+  popup?.remove();
+  if (fly) map.fitBounds(stateBounds(S.state), { padding: isMobile() ? 30 : 70, pitch: 45, bearing: -10, maxZoom: 8.5, duration: 2200 });
+  if (S.theme === "follow") applyTheme(STATES[S.state][6]);
+}
+let hoverCode = null;
+const tip = document.createElement("div");
+tip.className = "state-tip"; document.body.append(tip);
+map.on("mousemove", "state-3d", (e) => {
+  if (map.queryRenderedFeatures(e.point, { layers: ["dest-dot", "stop-num"] }).length) { tip.hidden = true; return; }
+  const code = e.features[0].properties.code;
+  if (code !== hoverCode) {
+    if (hoverCode) map.setFeatureState({ source: "states", id: hoverCode }, { hover: false });
+    map.setFeatureState({ source: "states", id: code }, { hover: true });
+    hoverCode = code; map.getCanvas().style.cursor = "pointer";
+    const count = DESTINATIONS.filter((d) => d.state === code).length;
+    tip.textContent = `${stateName(code)} · ${count} ${t("results")} — ${t("tapState")}`;
+  }
+  tip.hidden = false;
+  tip.style.transform = `translate(${e.originalEvent.clientX + 14}px, ${e.originalEvent.clientY + 14}px)`;
+});
+map.on("mouseleave", "state-3d", () => {
+  if (hoverCode) map.setFeatureState({ source: "states", id: hoverCode }, { hover: false });
+  hoverCode = null; tip.hidden = true; map.getCanvas().style.cursor = "";
+});
+map.on("click", "state-3d", (e) => {
+  if (map.queryRenderedFeatures(e.point, { layers: ["dest-dot", "stop-num"] }).length) return;
+  const code = e.features[0].properties.code;
+  tip.hidden = true;
+  selectState(code);
+});
 
 for (const layer of ["dest-dot", "stop-num"]) {
   map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
@@ -408,22 +483,16 @@ function applyLang() {
   document.querySelectorAll("[data-i]").forEach((el) => (el.textContent = t(el.dataset.i)));
   $("#search").placeholder = t("search");
   $("#adMail").href = `mailto:${AD_CONTACT}?subject=${encodeURIComponent("Advertise on sanNchari Bharat")}`;
-  fillSelects(); fillChips(); renderPinned(); renderFestivals(); refresh();
+  fillSelects(); fillChips(); renderPinned(); renderFestivals(); refresh(); paintStates();
   if (S.lastTrip) renderItinerary(S.lastTrip);
 }
 
 function bind() {
   $("#lang").addEventListener("change", (e) => { S.lang = e.target.value; applyLang(); });
   $("#search").addEventListener("input", (e) => { S.q = e.target.value.trim(); refresh(); });
-  $("#region").addEventListener("change", (e) => { S.region = e.target.value; S.state = ""; fillSelects(); refresh(); });
-  $("#state").addEventListener("change", (e) => {
-    S.state = e.target.value; refresh();
-    if (S.state) {
-      const s = STATES[S.state];
-      map.flyTo({ center: [s[5], s[4]], zoom: ["DL", "CH", "PY", "GA"].includes(S.state) ? 8.5 : 5.8, pitch: 20, duration: 2000 });
-      if (S.theme === "follow") applyTheme(s[6]);
-    }
-  });
+  $("#region").addEventListener("change", (e) => { S.region = e.target.value; S.state = ""; fillSelects(); refresh(); paintStates(); });
+  $("#state").addEventListener("change", (e) => selectState(e.target.value));
+  $("#states3d").addEventListener("change", (e) => { S.states3d = e.target.checked; paintStates(); });
   $("#month").addEventListener("change", (e) => { S.month = +e.target.value; refresh(); });
   $("#gems").addEventListener("change", (e) => { S.gems = e.target.checked; refresh(); });
   $("#from").addEventListener("change", (e) => {
@@ -443,7 +512,7 @@ function bind() {
     Object.assign(S, { q: "", region: "", state: "", month: 0, gems: false, from: null });
     S.cats.clear(); S.groups.clear();
     $("#search").value = ""; $("#gems").checked = false; $("#from").value = "";
-    fillSelects(); fillChips(); refresh();
+    fillSelects(); fillChips(); refresh(); paintStates();
   });
   const chipToggle = (sel, set, after) => $(sel).addEventListener("click", (e) => {
     const b = e.target.closest(".chip"); if (!b) return;
@@ -493,7 +562,7 @@ function bind() {
   $("#mapStyle").addEventListener("change", (e) => { S.mapStyle = e.target.value; popup?.remove(); map.setStyle(buildStyle(S.mapStyle)); });
   $("#terrain").addEventListener("change", (e) => { S.terrain = e.target.checked; setTerrain(S.terrain); });
   $("#menuBtn").addEventListener("click", () => $("#panel").classList.toggle("open"));
-  $("#flyIndia").addEventListener("click", () => { popup?.remove(); map.flyTo({ center: [80.5, 22], zoom: isMobile() ? 3.2 : 3.9, pitch: 0, bearing: 0, duration: 2000 }); });
+  $("#flyIndia").addEventListener("click", () => { popup?.remove(); selectState("", { fly: false }); map.flyTo({ center: [80.5, 22], zoom: isMobile() ? 3.2 : 3.9, pitch: 0, bearing: 0, duration: 2000 }); });
 }
 
 // ─────────────────────────── boot ───────────────────────────
