@@ -6,6 +6,9 @@
 //  access:     e = easy (fine for elders and a baby) · m = moderate walking/roads · t = tough / high altitude
 //  gem:        1 = lesser-visited place near a bigger hub
 // Coordinates are approximate (town / site centre). Verify before printing them anywhere.
+import { SOUTH } from "./places/south.js";
+import { WEST } from "./places/west.js";
+
 const RAW = [
   // ── Karnataka ──
   ["Mysuru Palace", "KA", 12.3052, 76.6552, "HFD", "10-3", "e", "Royal palace lit by 97,000 bulbs on Sundays and during Dasara"],
@@ -327,7 +330,8 @@ export const GROUPS = {
   baby:       { en: "With a feeding baby", kn: "ಹಾಲುಣಿಸುವ ಮಗುವಿನೊಂದಿಗೆ", hi: "दूध पीते शिशु के साथ", cats: "FCDHS", maxAccess: "e" },
 };
 
-export const DESTINATIONS = RAW.map((r, i) => ({
+// New batches are appended after the original rows so existing place numbers never change.
+export const DESTINATIONS = [...RAW, ...SOUTH, ...WEST].map((r, i) => ({
   id: i,
   name: r[0],
   state: r[1],

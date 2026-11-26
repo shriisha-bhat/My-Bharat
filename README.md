@@ -7,6 +7,7 @@ The all-India edition of [sanNchari](https://www.sannchari.com): a 3D travel glo
 ## Features
 
 - **3D globe** (MapLibre GL, globe projection) with satellite, map and night looks, plus an optional **3D terrain** mode
+- **3D state map**: every state and UT is a raised block on official (Survey of India based) boundaries. Hover for its name and place count; click to raise it, outline it, tilt into it and filter the list. Toggle it in the panel footer
 - **Destinations across India**: famous hubs plus 💎 *hidden gems* (lesser-visited places near each hub)
 - **Categories**: devotional, heritage, chill-out, bike ride, family hangout, wildlife, beach, hills, adventure
 - **Traveller groups** (multi-select): solo biker, biker group, family, couple, girls' gang, boys' gang, young group, elders, travelling with a feeding baby. Elders and baby filters hide high-altitude or tough-access places
@@ -30,7 +31,9 @@ js/planner.js         long-trip routing logic
 js/themes.js          art-form palettes and motifs
 js/i18n.js            EN / KN / HI strings
 data/states.js        36 states & UTs (names in 3 languages, region, centre, theme)
-data/destinations.js  destination dataset (one row per place, format documented at the top)
+data/destinations.js  original destination dataset (one row per place, format documented at the top)
+data/places/*.js      added places in regional batches (south.js, west.js, …), appended after the original rows
+data/india-states.js  simplified state & UT boundaries for the 3D state map
 data/festivals.js     festivals by month
 data/cities.js        starting cities
 data/ads.js           ad slots, edit this to sell ads
@@ -57,7 +60,8 @@ python3 -m http.server 8080
 
 ## Add or edit places
 
-Add a row to `data/destinations.js`:
+Add a row to the batch file for the place's region in `data/places/` (or `data/destinations.js`). Always add at the end of a list: trip share links store place numbers, so never reorder or delete rows in the middle.
+
 
 ```js
 ["Place name", "KA", 12.97, 77.59, "HDF", "10-3", "e", "One-line note", 1],
@@ -77,3 +81,16 @@ Edit `data/ads.js`:
 Imagery © Esri, Maxar, Earthstar Geographics · Map tiles © OpenStreetMap contributors © CARTO · Terrain: Mapzen / AWS Open Data · Fonts: OpenFreeMap.
 
 Contact for ads and suggestions: **contact.sannchari@gmail.com**
+
+## Data coverage
+
+Places are being added region by region from the official state tourism websites plus local favourites and hidden gems. Every coordinate is checked against the state boundary and against OpenStreetMap.
+
+| Batch | States | Status |
+|---|---|---|
+| 1 | South (KA, KL, TN, AP, TS, PY, LD) and West (GA, MH, GJ, RJ, DN) | done |
+| 2 | North (UP, UK, HP, PB, HR, CH, DL, JK, LA) | to do |
+| 3 | Central & East (MP, CG, BR, JH, WB, OD) | to do |
+| 4 | North-East & Islands (AS, AR, NL, MN, MZ, TR, ML, SK, AN) | to do |
+
+Boundaries: datta07/INDIAN-SHAPEFILES (Survey of India based).
