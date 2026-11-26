@@ -168,30 +168,52 @@ function selectState(code, { fly = true } = {}) {
   if (fly) map.fitBounds(stateBounds(S.state), { padding: isMobile() ? 30 : 70, pitch: 45, bearing: -10, maxZoom: 8.5, duration: 2200 });
   if (S.theme === "follow") applyTheme(STATES[S.state][6]);
 }
+// Globe projection can't hit-test extruded shapes, so find the state under the cursor ourselves.
+function inRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+const SHAPE_BOX = STATE_SHAPES.features.map((f) => [f, stateBounds(f.properties.code)]);
+function stateAt(point) {
+  if (!S.states3d || map.getZoom() > 7.5) return null;
+  if (map.queryRenderedFeatures(point, { layers: ["dest-dot", "stop-num"] }).length) return null;
+  const { lng, lat } = map.unproject(point);
+  for (const [f, b] of SHAPE_BOX) {
+    if (lng < b.getWest() || lng > b.getEast() || lat < b.getSouth() || lat > b.getNorth()) continue;
+    const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    for (const p of polys) if (inRing(lng, lat, p[0]) && !p.slice(1).some((h) => inRing(lng, lat, h))) return f.properties.code;
+  }
+  return null;
+}
 let hoverCode = null;
 const tip = document.createElement("div");
-tip.className = "state-tip"; document.body.append(tip);
-map.on("mousemove", "state-3d", (e) => {
-  if (map.queryRenderedFeatures(e.point, { layers: ["dest-dot", "stop-num"] }).length) { tip.hidden = true; return; }
-  const code = e.features[0].properties.code;
-  if (code !== hoverCode) {
-    if (hoverCode) map.setFeatureState({ source: "states", id: hoverCode }, { hover: false });
-    map.setFeatureState({ source: "states", id: code }, { hover: true });
-    hoverCode = code; map.getCanvas().style.cursor = "pointer";
-    const count = DESTINATIONS.filter((d) => d.state === code).length;
-    tip.textContent = `${stateName(code)} · ${count} ${t("results")} — ${t("tapState")}`;
-  }
+tip.className = "state-tip"; tip.hidden = true; document.body.append(tip);
+function setHover(code) {
+  if (code === hoverCode) return;
+  if (hoverCode) map.setFeatureState({ source: "states", id: hoverCode }, { hover: false });
+  if (code) map.setFeatureState({ source: "states", id: code }, { hover: true });
+  hoverCode = code;
+}
+map.on("mousemove", (e) => {
+  if (!map.getSource("states") || map.isMoving()) return;
+  const code = stateAt(e.point);
+  setHover(code);
+  if (!code) { tip.hidden = true; if (!map.queryRenderedFeatures(e.point, { layers: ["dest-dot", "stop-num"] }).length) map.getCanvas().style.cursor = ""; return; }
+  map.getCanvas().style.cursor = "pointer";
+  const count = DESTINATIONS.filter((d) => d.state === code).length;
+  tip.textContent = `${stateName(code)} · ${count} ${t("results")} — ${t("tapState")}`;
   tip.hidden = false;
   tip.style.transform = `translate(${e.originalEvent.clientX + 14}px, ${e.originalEvent.clientY + 14}px)`;
 });
-map.on("mouseleave", "state-3d", () => {
-  if (hoverCode) map.setFeatureState({ source: "states", id: hoverCode }, { hover: false });
-  hoverCode = null; tip.hidden = true; map.getCanvas().style.cursor = "";
-});
-map.on("click", "state-3d", (e) => {
-  if (map.queryRenderedFeatures(e.point, { layers: ["dest-dot", "stop-num"] }).length) return;
-  const code = e.features[0].properties.code;
-  tip.hidden = true;
+map.getCanvas().addEventListener("mouseleave", () => { setHover(null); tip.hidden = true; });
+map.on("click", (e) => {
+  const code = stateAt(e.point);
+  if (!code) return;
+  setHover(null); tip.hidden = true;
   selectState(code);
 });
 
