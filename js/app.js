@@ -138,6 +138,7 @@ map.on("style.load", addOverlays);
 map.on("load", () => !S.lastTrip && map.flyTo({ center: [80.5, 22], zoom: isMobile() ? 3.2 : 3.9, duration: 3500, essential: true }));
 
 // ─────────────────────────── 3D states ───────────────────────────
+let hoverCode = null;
 const SHAPE_BY = new Map(STATE_SHAPES.features.map((f) => [f.properties.code, f]));
 function stateBounds(code) {
   const b = new maplibregl.LngLatBounds();
@@ -148,7 +149,7 @@ function stateBounds(code) {
 function paintStates() {
   if (!map.getLayer("state-3d")) return;
   const sel = S.state, on = S.states3d;
-  const hover = ["boolean", ["feature-state", "hover"], false];
+  const hover = ["==", ["get", "code"], hoverCode || ""];
   map.setLayoutProperty("state-3d", "visibility", on ? "visible" : "none");
   map.setLayoutProperty("state-name", "visibility", on ? "visible" : "none");
   map.setPaintProperty("state-3d", "fill-extrusion-color", ["case", hover, "#ffd21f",
@@ -189,14 +190,12 @@ function stateAt(point) {
   }
   return null;
 }
-let hoverCode = null;
 const tip = document.createElement("div");
 tip.className = "state-tip"; tip.hidden = true; document.body.append(tip);
 function setHover(code) {
   if (code === hoverCode) return;
-  if (hoverCode) map.setFeatureState({ source: "states", id: hoverCode }, { hover: false });
-  if (code) map.setFeatureState({ source: "states", id: code }, { hover: true });
   hoverCode = code;
+  paintStates();
 }
 map.on("mousemove", (e) => {
   if (!map.getSource("states") || map.isMoving()) return;
