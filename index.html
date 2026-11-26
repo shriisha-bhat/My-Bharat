@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>sanNchari Bharat — 3D travel globe of India</title>
+  <meta name="description" content="Explore all of India on a 3D globe: devotional, heritage, chill-out, bike rides, family hangouts, hidden gems, festivals and long-trip planning for a month or more." />
+  <meta property="og:title" content="sanNchari Bharat — Come, let's see Bharat" />
+  <meta property="og:description" content="36 states & UTs on one 3D globe. Plan trips from a weekend to three months." />
+  <meta name="theme-color" content="#1a0d05" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Tamma+2:wght@500;700;800&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Inter:wght@400;600;700&display=swap" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" title="sanNchari Bharat">
+      <span class="logo"><b class="l-red">san</b><b class="l-or">N</b><b class="l-yel">chari</b></span>
+      <span class="bharat">Bharat</span>
+      <span class="tagline" data-i="tagline"></span>
+    </div>
+    <div class="top-controls">
+      <select id="lang" aria-label="Language">
+        <option value="en">English</option>
+        <option value="kn">ಕನ್ನಡ</option>
+        <option value="hi">हिंदी</option>
+      </select>
+      <button id="menuBtn" class="icon-btn" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <aside id="panel" class="panel">
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="explore" data-i="explore"></button>
+        <button class="tab" data-tab="trip" data-i="trip"></button>
+        <button class="tab" data-tab="festivals" data-i="festivals"></button>
+        <button class="tab" data-tab="advertise" data-i="advertise"></button>
+      </nav>
+
+      <!-- EXPLORE -->
+      <section class="tabpane active" id="tab-explore">
+        <p class="welcome" data-i="welcome"></p>
+        <input id="search" type="search" autocomplete="off" />
+        <div class="row2">
+          <label><span data-i="region"></span><select id="region"></select></label>
+          <label><span data-i="state"></span><select id="state"></select></label>
+        </div>
+        <h4 data-i="categories"></h4>
+        <div id="cats" class="chips"></div>
+        <h4 data-i="travellers"></h4>
+        <div id="groups" class="chips"></div>
+        <div class="row2">
+          <label><span data-i="month"></span><select id="month"></select></label>
+          <label><span data-i="from"></span><select id="from"></select></label>
+        </div>
+        <button id="geo" class="link-btn" data-i="useLocation"></button>
+        <label class="check"><input type="checkbox" id="gems" /> <span data-i="gemsOnly"></span></label>
+        <div class="list-head"><b id="count">0</b> <span data-i="results"></span> · <button id="reset" class="link-btn" data-i="reset"></button></div>
+        <ol id="list" class="list"></ol>
+        <p class="fine" data-i="distanceNote"></p>
+        <div class="ad-slot" data-slot="list"></div>
+      </section>
+
+      <!-- LONG TRIP -->
+      <section class="tabpane" id="tab-trip">
+        <h3 data-i="tripTitle"></h3>
+        <p class="fine" data-i="tripHint"></p>
+        <div class="row2">
+          <label><span data-i="from"></span><select id="tripFrom"></select></label>
+          <label><span data-i="days"></span><input id="tripDays" type="number" min="2" max="90" value="30" /></label>
+        </div>
+        <div class="row2">
+          <label><span data-i="startDate"></span><input id="tripDate" type="date" /></label>
+          <label><span data-i="pace"></span>
+            <select id="tripPace">
+              <option value="relaxed" data-i="relaxed"></option>
+              <option value="normal" data-i="normal" selected></option>
+              <option value="fast" data-i="fast"></option>
+            </select>
+          </label>
+        </div>
+        <h4 data-i="regionsToCover"></h4>
+        <div id="tripRegions" class="chips"></div>
+        <h4 data-i="pinned"></h4>
+        <ul id="pinned" class="pinned"></ul>
+        <div class="btn-row">
+          <button id="planBtn" class="primary" data-i="planIt"></button>
+          <button id="clearTrip" class="ghost" data-i="clearTrip"></button>
+        </div>
+        <div id="itinerary"></div>
+        <div class="ad-slot" data-slot="trip"></div>
+      </section>
+
+      <!-- FESTIVALS -->
+      <section class="tabpane" id="tab-festivals">
+        <h3 data-i="festTitle"></h3>
+        <p class="fine" data-i="festNote"></p>
+        <div id="festMonths" class="chips"></div>
+        <ul id="festList" class="list fest"></ul>
+      </section>
+
+      <!-- ADVERTISE -->
+      <section class="tabpane" id="tab-advertise">
+        <h3 data-i="adTitle"></h3>
+        <p data-i="adText"></p>
+        <a id="adMail" class="primary as-btn" data-i="adMail"></a>
+        <p class="fine" data-i="privacy"></p>
+      </section>
+
+      <footer class="panel-foot">
+        <label><span data-i="theme"></span><select id="theme"></select></label>
+        <label><span data-i="mapStyle"></span><select id="mapStyle">
+          <option value="satellite" data-i="satellite"></option>
+          <option value="street" data-i="street"></option>
+          <option value="night" data-i="night"></option>
+        </select></label>
+        <label class="check"><input type="checkbox" id="terrain" /> <span data-i="terrain3d"></span></label>
+        <p class="fine"><span data-i="privacy"></span> · <a href="mailto:contact.sannchari@gmail.com">contact.sannchari@gmail.com</a></p>
+      </footer>
+    </aside>
+
+    <div id="map"></div>
+    <button id="flyIndia" class="fly-btn" data-i="flyIndia"></button>
+  </main>
+
+  <script src="vendor/maplibre-gl.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
