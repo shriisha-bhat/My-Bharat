@@ -301,6 +301,8 @@ export function init3D(o) {
       globe.relabel();
       if (ST) { const code = ST.code; ST.stL.visible = false; scene.remove(ST.stL); disposeSprite(ST.stL); const b = ST.box; ST.stL = label(stateName(code), (b[0] + b[2]) / 2, b[3] + (b[3] - b[1]) * 0.04, 0.034, "#ffd34d", ST.yAt); scene.add(ST.stL); }
     },
+    /** Draw the connected-states chain on the globe. */
+    setChain(codes) { globe.setChain(codes || []); },
     homeView() { if (ST) { C.auto = false; Object.assign(goal, C.home); } },
   };
 }

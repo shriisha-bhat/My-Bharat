@@ -7,6 +7,7 @@ import { STR, MONTHS, REGION_NAMES } from "./i18n.js";
 import { THEMES, applyTheme } from "./themes.js";
 import { planTrip, roadKm } from "./planner.js";
 import { STATE_SHAPES } from "../data/india-states.js";
+import { PROFILES } from "../data/state-profiles.js";
 
 // ─────────────────────────── state ───────────────────────────
 // Everything lives in memory only. No cookies, no localStorage, no analytics.
@@ -17,7 +18,7 @@ const S = {
   from: null,                       // {name, lat, lng}
   pinned: [],                       // destination objects
   tripRegions: new Set(),
-  theme: "follow", mapStyle: "satellite", terrain: false, states3d: true, view: "3d",
+  theme: "follow", mapStyle: "satellite", terrain: false, states3d: true, view: "3d", diet: "both", tripStates: [],
   lastTrip: null,
 };
 const $ = (s) => document.querySelector(s);
@@ -163,7 +164,7 @@ function paintStates() {
 function selectState(code, { fly = true, from3d = false } = {}) {
   S.state = code || "";
   if (S.state && S.region && STATES[S.state][3] !== S.region) S.region = "";
-  fillSelects(); refresh(); paintStates();
+  fillSelects(); refresh(); paintStates(); renderGuide();
   if (M3 && !from3d) { closeCard(); S.state ? M3.open(S.state) : M3.globe(); }
   if (!S.state) return;
   popup?.remove();
@@ -401,11 +402,134 @@ function runPlanner() {
   const pool = DESTINATIONS.filter((d) => matches(d, { ignore: ["q", "region", "state", "month"] }))
     .filter((d) => !S.tripRegions.size || S.tripRegions.has(STATES[d.state][3]));
   const wantCats = S.cats.size ? S.cats : new Set(groupRule()?.cats || ["H", "D", "C", "M", "W", "S"]);
-  const res = planTrip({ start, days, startDate, pace: $("#tripPace").value, pool, pinned: S.pinned, wantCats });
+  const res = S.tripStates.length
+    ? planChain({ start, days, startDate, pace: $("#tripPace").value, wantCats })
+    : planTrip({ start, days, startDate, pace: $("#tripPace").value, pool, pinned: S.pinned, wantCats });
   S.lastTrip = { ...res, start, startDate, days };
   renderItinerary(S.lastTrip);
   drawTrip(S.lastTrip);
   writeHash();
+}
+
+// Connected states: the days are shared out across the chosen states in order (at least two
+// each, the rest by how many places a state has), and each state is planned in turn, starting
+// where the last one ended. Days a state does not use roll over to the next.
+function planChain({ start, days, startDate, pace, wantCats }) {
+  for (const p of S.pinned) if (!S.tripStates.includes(p.state)) S.tripStates.push(p.state);
+  renderTripStates();
+  const chain = S.tripStates;
+  const base = DESTINATIONS.filter((d) => matches(d, { ignore: ["q", "region", "state", "month"] }));
+  const w = chain.map((c) => Math.sqrt(Math.max(1, base.filter((d) => d.state === c).length)));
+  const W = w.reduce((a, b) => a + b, 0);
+  let alloc;
+  if (days >= chain.length * 2) {
+    const rest = days - chain.length * 2, share = w.map((x) => (rest * x) / W);
+    alloc = share.map((x) => 2 + Math.floor(x));
+    let left = days - alloc.reduce((a, b) => a + b, 0);
+    share.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { alloc[i]++; left--; } });
+  } else alloc = chain.map((_, i) => (i < days ? 1 : 0));
+  const plan = [], stops = [];
+  let here = start, used = 0, carry = 0, totalKm = 0;
+  chain.forEach((code, i) => {
+    const d = alloc[i] + carry;
+    if (d <= 0) return;
+    const res = planTrip({ start: here, days: d, startDate: new Date(startDate.getTime() + used * 864e5), pace,
+      pool: base.filter((x) => x.state === code), pinned: S.pinned.filter((x) => x.state === code), wantCats });
+    const last = res.plan.reduce((m, p) => Math.max(m, p.day + (p.nights || 1) - 1), 0);
+    res.plan.forEach((p) => { p.day += used; p.state = code; if (p.type === "stay") p.inSeason = p.dest.months.includes(new Date(startDate.getTime() + (p.day - 1) * 864e5).getMonth() + 1); });
+    plan.push(...res.plan); stops.push(...res.stops); totalKm += res.totalKm;
+    used += last; carry = d - last;
+    if (res.stops.length) here = res.stops.at(-1);
+  });
+  return { plan, stops, totalKm, chain: [...chain], tight: days < chain.length * 2 };
+}
+
+// ─────────────────────────── state guide & food ───────────────────────────
+const dishes = (list) => `<ul class="dishes">${list.map(([n, d]) => `<li><b>${esc(n)}</b> <span>${esc(d)}</span></li>`).join("")}</ul>`;
+function guideHTML(code) {
+  const p = PROFILES[code]; if (!p) return "";
+  const inTrip = S.tripStates.includes(code), nm = stateName(code);
+  const chips = (a) => `<div class="g-chips">${a.map((x) => `<span>${esc(x)}</span>`).join("")}</div>`;
+  return `<div class="g-head"><h3>${esc(nm)}</h3>
+      <button class="g-add ${inTrip ? "on" : ""}" data-act="trip" data-code="${code}">${(inTrip ? t("inTrip") : t("addToTrip")).replace("{s}", esc(nm))}</button></div>
+    <p class="g-look">${esc(p.look)}</p>
+    <dl><dt>${t("gLang")}</dt><dd>${esc(p.lang)}</dd><dt>${t("gDress")}</dt><dd>${esc(p.dress)}</dd></dl>
+    <div class="g-sec">${t("gArts")}</div>${chips(p.arts)}
+    <div class="g-sec">${t("gFest")}</div>${chips(p.fest)}
+    <div class="g-sec">🍛 ${t("gFood")}</div>
+    ${S.diet !== "non" ? `<div class="food veg"><div class="ft">${t("vegNote")}</div>${dishes(p.veg)}</div>` : ""}
+    ${S.diet !== "veg" ? `<div class="food non"><div class="ft">${t("nonNote")}</div>${dishes(p.non)}</div>` : ""}`;
+}
+let guideOpen = true;
+function renderGuide() {
+  const g = $("#stateGuide");
+  g.hidden = !S.state;
+  g.innerHTML = S.state ? guideHTML(S.state) : "";
+  const code = M3?.current(), g3 = $("#guide3d");
+  g3.hidden = !(S.view === "3d" && code);
+  if (!g3.hidden) {
+    $("#guide3dBtn").textContent = t("guidePill").replace("{s}", stateName(code));
+    $("#guide3dBody").hidden = !guideOpen;
+    $("#guide3dBtn").hidden = guideOpen;
+    $("#guide3dBody").innerHTML = `<button class="x" data-act="hide" aria-label="${t("hide")}">×</button>${guideHTML(code)}`;
+  }
+}
+/** A few dishes for a state, by the traveller's food preference. */
+function eatLine(code, n = 2) {
+  const p = PROFILES[code]; if (!p) return "";
+  const v = p.veg.slice(0, n).map((d) => d[0]), nv = p.non.slice(0, n).map((d) => d[0]);
+  return [S.diet !== "non" && v.length ? `🥦 ${v.join(", ")}` : "", S.diet !== "veg" && nv.length ? `🍗 ${nv.join(", ")}` : ""].filter(Boolean).join(" · ");
+}
+/** One dish to try on a given stop, rotating through the state's list. */
+function dishFor(code, k) {
+  const p = PROFILES[code]; if (!p) return "";
+  const list = S.diet === "veg" ? p.veg : S.diet === "non" ? p.non : [...p.veg, ...p.non].sort((a, b) => a[0].localeCompare(b[0]));
+  return list.length ? list[k % list.length][0] : "";
+}
+function setDiet(v) {
+  S.diet = v;
+  $("#tripDiet").value = v;
+  document.querySelectorAll("#diet .chip").forEach((b) => b.classList.toggle("on", b.dataset.k === v));
+  renderGuide();
+  if (S.lastTrip) renderItinerary(S.lastTrip);
+}
+
+// ─────────────────────────── connected states ───────────────────────────
+const NEIGH = (() => {
+  const key = (p) => p[0].toFixed(2) + "," + p[1].toFixed(2), pts = new Map(), cen = new Map();
+  for (const f of STATE_SHAPES.features) {
+    const set = new Set(), polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    for (const poly of polys) for (const p of poly[0]) set.add(key(p));
+    pts.set(f.properties.code, set);
+    cen.set(f.properties.code, { lat: STATES[f.properties.code][4], lng: STATES[f.properties.code][5] });
+  }
+  const out = {};
+  for (const [a, sa] of pts) {
+    out[a] = [];
+    for (const [b, sb] of pts) {
+      if (a === b) continue;
+      let n = 0;
+      for (const k of sa) if (sb.has(k) && ++n > 2) break;
+      if (n > 2) out[a].push(b);
+    }
+    // islands have no land neighbours: suggest the nearest states instead
+    if (!out[a].length) out[a] = [...cen.keys()].filter((b) => b !== a).sort((x, y) => roadKm(cen.get(a), cen.get(x)) - roadKm(cen.get(a), cen.get(y))).slice(0, 3);
+  }
+  return out;
+})();
+function toggleTripState(code) {
+  const i = S.tripStates.indexOf(code);
+  if (i >= 0) S.tripStates.splice(i, 1); else S.tripStates.push(code);
+  renderTripStates(); renderGuide();
+}
+function renderTripStates() {
+  const byName2 = (a, b) => STATES[a][0].localeCompare(STATES[b][0]);
+  $("#tripStates").innerHTML = S.tripStates.map((c, i) => `<li data-code="${c}"><span class="n">${i + 1}</span><span class="nm">${esc(stateName(c))}</span>
+      ${i ? `<button data-act="up" aria-label="Move up">↑</button>` : ""}<button data-act="rm" aria-label="Remove">✕</button></li>`).join("");
+  $("#addState").innerHTML = `<option value="">—</option>` + Object.keys(STATES).filter((c) => !S.tripStates.includes(c)).sort(byName2).map((c) => `<option value="${c}">${esc(stateName(c))}</option>`).join("");
+  const last = S.tripStates.at(-1), nd = last ? NEIGH[last].filter((c) => !S.tripStates.includes(c)).sort(byName2) : [];
+  $("#nextDoor").innerHTML = nd.length ? `<span class="fine">${t("nextDoor")} · ${esc(stateName(last))}:</span>` + nd.map((c) => `<button class="chip" data-k="${c}">＋ ${esc(stateName(c))}</button>`).join("") : "";
+  M3?.setChain(S.tripStates);
 }
 
 function dateFor(startDate, day) {
@@ -413,16 +537,27 @@ function dateFor(startDate, day) {
   return `${d.getDate()} ${MONTHS[S.lang][d.getMonth()]}`;
 }
 
+/** A heading row in the itinerary whenever the trip enters a new state, with what to eat there. */
+let headState = null;
+function stateHead(p, k, plan) {
+  const code = p.type === "stay" ? p.dest.state : plan.slice(k).find((x) => x.type === "stay")?.dest.state;
+  if (!code || code === headState) return "";
+  headState = code;
+  return `<li class="st-head"><b>📍 ${esc(stateName(code))}</b><div class="fine">${t("eatIn").replace("{s}", esc(stateName(code)))}: ${esc(eatLine(code))}</div></li>`;
+}
 function renderItinerary(trip) {
+  headState = null;
   const { plan, totalKm, stops, start, startDate } = trip;
   if (!plan.length) { $("#itinerary").innerHTML = `<p class="fine">${t("noResults")}</p>`; return; }
   $("#itinerary").innerHTML = `
     <div class="itin-sum"><b>${start.name}</b> → ${stops.length} ${t("stops")} · ${t("totalDistance")}: <b>${totalKm.toLocaleString("en-IN")} km</b></div>
-    <ol class="itin">${plan.map((p) => p.type === "travel"
+    ${trip.tight ? `<p class="fine warn">${t("fewDays")}</p>` : ""}
+    <ol class="itin">${plan.map((p, k) => (stateHead(p, k, plan)) + (p.type === "travel"
       ? `<li class="travel"><div class="d">${t("day")} ${p.day} · ${dateFor(startDate, p.day)}</div>🚆 ${t("travelDay")}: ${esc(p.from)} → ${esc(p.to)}${p.km ? ` (~${p.km} km, ${p.mode})` : ""}</li>`
       : `<li data-id="${p.dest.id}"><div class="d">${t("day")} ${p.day}${p.nights > 1 ? `–${p.day + p.nights - 1}` : ""} · ${dateFor(startDate, p.day)}${p.km ? ` · ${p.km} km` : ""}</div>
            <b>${esc(p.dest.name)}</b> <span class="fine">${stateName(p.dest.state)}</span> ${catIcons(p.dest)}
-           ${p.inSeason ? "" : `<span class="badge off">${t("offSeason")}</span>`}${p.dest.gem ? " 💎" : ""}</li>`).join("")}
+           ${p.inSeason ? "" : `<span class="badge off">${t("offSeason")}</span>`}${p.dest.gem ? " 💎" : ""}
+           ${dishFor(p.dest.state, k) ? `<div class="try">🍽 ${t("tryFood")}: ${esc(dishFor(p.dest.state, k))}</div>` : ""}</li>`)).join("")}
     </ol>
     <div class="btn-row">
       <button class="ghost" id="copyTrip">${t("copy")}</button>
@@ -449,7 +584,7 @@ function tripText() {
   for (const p of tr.plan) {
     lines.push(p.type === "travel"
       ? `Day ${p.day} (${dateFor(tr.startDate, p.day)}): Travel ${p.from} → ${p.to}${p.km ? ` ~${p.km} km` : ""}`
-      : `Day ${p.day}${p.nights > 1 ? `-${p.day + p.nights - 1}` : ""} (${dateFor(tr.startDate, p.day)}): ${p.dest.name}, ${STATES[p.dest.state][0]}`);
+      : `Day ${p.day}${p.nights > 1 ? `-${p.day + p.nights - 1}` : ""} (${dateFor(tr.startDate, p.day)}): ${p.dest.name}, ${STATES[p.dest.state][0]}${dishFor(p.dest.state, tr.plan.indexOf(p)) ? ` · try ${dishFor(p.dest.state, tr.plan.indexOf(p))}` : ""}`);
   }
   lines.push("", `Approx. road distance: ${tr.totalKm} km`, location.href);
   return lines.join("\n");
@@ -462,6 +597,7 @@ function writeHash() {
     days: $("#tripDays").value, date: $("#tripDate").value, pace: $("#tripPace").value,
     regions: [...S.tripRegions].join(","), pins: S.pinned.map((p) => p.id).join(","),
     cats: [...S.cats].join(""), groups: [...S.groups].join(","), lang: S.lang,
+    states: S.tripStates.join(","), diet: S.diet,
   });
   history.replaceState(null, "", "#" + h.toString());
 }
@@ -477,6 +613,8 @@ function readHash() {
   (h.get("cats") || "").split("").filter((c) => CATEGORIES[c]).forEach((c) => S.cats.add(c));
   (h.get("groups") || "").split(",").filter((g) => GROUPS[g]).forEach((g) => S.groups.add(g));
   if (STR[h.get("lang")]) S.lang = h.get("lang");
+  (h.get("states") || "").split(",").filter((c) => STATES[c]).forEach((c) => S.tripStates.push(c));
+  if (["veg", "non", "both"].includes(h.get("diet"))) S.diet = h.get("diet");
   return true;
 }
 
@@ -526,6 +664,9 @@ function applyLang() {
   fillSelects(); fillChips(); renderPinned(); renderFestivals(); refresh(); paintStates();
   if (S.lastTrip) renderItinerary(S.lastTrip);
   M3?.relabel(); exploreLabel();
+  $("#diet").innerHTML = ["both", "veg", "non"].map((k) => `<button class="chip ${S.diet === k ? "on" : ""}" data-k="${k}">${{ both: "🍽", veg: "🥦", non: "🍗" }[k]} ${t(k === "non" ? "nonveg" : k)}</button>`).join("");
+  $("#tripDiet").value = S.diet;
+  renderTripStates(); renderGuide();
 }
 
 function bind() {
@@ -603,6 +744,25 @@ function bind() {
   $("#mapStyle").addEventListener("change", (e) => { S.mapStyle = e.target.value; popup?.remove(); map.setStyle(buildStyle(S.mapStyle)); });
   $("#terrain").addEventListener("change", (e) => { S.terrain = e.target.checked; setTerrain(S.terrain); });
   $("#menuBtn").addEventListener("click", () => $("#panel").classList.toggle("open"));
+  $("#diet").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (b) setDiet(b.dataset.k); });
+  $("#tripDiet").addEventListener("change", (e) => setDiet(e.target.value));
+  const guideClick = (e) => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    if (b.dataset.act === "trip") toggleTripState(b.dataset.code);
+    if (b.dataset.act === "hide") { guideOpen = false; renderGuide(); }
+  };
+  $("#stateGuide").addEventListener("click", guideClick);
+  $("#guide3dBody").addEventListener("click", guideClick);
+  $("#guide3dBtn").addEventListener("click", () => { guideOpen = true; renderGuide(); });
+  $("#addState").addEventListener("change", (e) => { if (e.target.value) toggleTripState(e.target.value); });
+  $("#nextDoor").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (b) toggleTripState(b.dataset.k); });
+  $("#tripStates").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]"); if (!b) return;
+    const code = b.closest("li").dataset.code, i = S.tripStates.indexOf(code);
+    if (b.dataset.act === "rm") S.tripStates.splice(i, 1);
+    if (b.dataset.act === "up" && i > 0) [S.tripStates[i - 1], S.tripStates[i]] = [S.tripStates[i], S.tripStates[i - 1]];
+    renderTripStates(); renderGuide();
+  });
   $("#view3d").addEventListener("click", () => setView("3d"));
   $("#viewSat").addEventListener("click", () => setView("sat"));
   $("#z3globe").addEventListener("click", () => selectState(""));
@@ -620,6 +780,7 @@ function setView(v) {
   $("#viewSat").classList.toggle("on", v === "sat");
   if (v === "sat") { closeCard(); map.resize(); if (S.state) map.fitBounds(stateBounds(S.state), { padding: 60, pitch: 45, maxZoom: 8.5, duration: 0 }); }
   else popup?.remove();
+  renderGuide();
 }
 function exploreLabel() {
   $("#z3explore").textContent = picked ? t("z3explore").replace("{s}", stateName(picked)) : t("z3pickIndia");
@@ -633,8 +794,8 @@ async function boot3D() {
     M3 = init3D({
       stage: $("#stage3d"), canvas: $("#gl3d"), shapes: STATE_SHAPES, world, places: DESTINATIONS, cities: CITIES, stateName, t,
       onPickState: pickOnGlobe,
-      onEnterState: (code) => { picked = code; exploreLabel(); if (S.state !== code) selectState(code, { fly: false, from3d: true }); },
-      onGlobe: () => { closeCard(); if (S.state) { S.state = ""; fillSelects(); refresh(); } },
+      onEnterState: (code) => { picked = code; exploreLabel(); guideOpen = true; if (S.state !== code) selectState(code, { fly: false, from3d: true }); else renderGuide(); },
+      onGlobe: () => { closeCard(); if (S.state) { S.state = ""; fillSelects(); refresh(); } renderGuide(); },
       onPlace: (id) => openCard(DESTINATIONS[id], true),
       onHover: (code, e) => {
         if (!code || !e) { tip3.hidden = true; return; }
@@ -645,6 +806,7 @@ async function boot3D() {
       },
     });
     pickOnGlobe(S.state || "KA");
+    M3.setChain(S.tripStates);
     refresh();
     if (S.state) M3.open(S.state);
   } catch (err) {

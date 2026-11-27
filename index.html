@@ -47,6 +47,9 @@
           <label><span data-i="region"></span><select id="region"></select></label>
           <label><span data-i="state"></span><select id="state"></select></label>
         </div>
+        <h4 data-i="foodPref"></h4>
+        <div id="diet" class="chips"></div>
+        <div id="stateGuide" class="guide" hidden></div>
         <h4 data-i="categories"></h4>
         <div id="cats" class="chips"></div>
         <h4 data-i="travellers"></h4>
@@ -83,6 +86,18 @@
         </div>
         <h4 data-i="regionsToCover"></h4>
         <div id="tripRegions" class="chips"></div>
+        <h4 data-i="connectStates"></h4>
+        <p class="fine" data-i="connectHint"></p>
+        <ol id="tripStates" class="chain"></ol>
+        <div class="row2">
+          <label><span data-i="addState"></span><select id="addState"></select></label>
+          <label><span data-i="foodPref"></span><select id="tripDiet">
+            <option value="both" data-i="both"></option>
+            <option value="veg" data-i="veg"></option>
+            <option value="non" data-i="nonveg"></option>
+          </select></label>
+        </div>
+        <div id="nextDoor" class="chips next-door"></div>
         <h4 data-i="pinned"></h4>
         <ul id="pinned" class="pinned"></ul>
         <div class="btn-row">
@@ -148,6 +163,10 @@
         <div id="z3tip" class="state-tip" hidden></div>
         <div class="z3load"><span data-i="z3loading"></span></div>
         <div id="card3d" class="card3d" hidden></div>
+        <div id="guide3d" class="guide3d" hidden>
+          <button id="guide3dBtn" class="guide-pill"></button>
+          <div id="guide3dBody" class="guide guide-float" hidden></div>
+        </div>
         <p class="z3fail" hidden data-i="z3fail"></p>
       </div>
 

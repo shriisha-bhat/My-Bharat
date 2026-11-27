@@ -409,5 +409,32 @@ export function createGlobe({ renderer, canvas, world, shapes, names, onPick, on
     return true;
   }
 
-  return { frame, select, dive, show, relabel, st, selected: () => plinth?.code || null };
+  /* connected states: gold arcs between state centres, numbered in travel order */
+  const chainG = new THREE.Group();
+  earth.add(chainG);
+  const arcM = new THREE.LineBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.95 });
+  const dotM = new THREE.MeshBasicMaterial({ color: 0xffd34d });
+  function setChain(codes) {
+    chainG.children.forEach((o) => { o.geometry?.dispose(); o.material?.map?.dispose(); });
+    chainG.clear();
+    const cs = codes.filter((c) => byCode.has(c)).map((c) => centroid(byCode.get(c)));
+    cs.forEach(([lo, la], i) => {
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), dotM);
+      dot.position.copy(v3(lo, la, GR * 1.012));
+      chainG.add(dot);
+      const n = textSprite(String(i + 1), "#ffd34d", 0.32);
+      n.position.copy(v3(lo, la, GR * 1.05));
+      chainG.add(n);
+      if (!i) return;
+      const a = v3(...cs[i - 1], 1).normalize(), b = v3(lo, la, 1).normalize(), pts = [];
+      const ang = a.angleTo(b), hgt = 0.02 + ang * 0.35;
+      for (let k = 0; k <= 48; k++) {
+        const t = k / 48, q = a.clone().multiplyScalar(Math.sin((1 - t) * ang)).add(b.clone().multiplyScalar(Math.sin(t * ang))).divideScalar(Math.sin(ang) || 1);
+        pts.push(q.normalize().multiplyScalar(GR * (1.01 + hgt * Math.sin(Math.PI * t))));
+      }
+      chainG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), arcM));
+    });
+  }
+
+  return { frame, select, dive, show, relabel, setChain, st, selected: () => plinth?.code || null };
 }
