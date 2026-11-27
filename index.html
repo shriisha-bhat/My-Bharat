@@ -122,10 +122,43 @@
       </footer>
     </aside>
 
-    <div id="map"></div>
-    <button id="flyIndia" class="fly-btn" data-i="flyIndia"></button>
+    <div class="mapwrap">
+      <div id="map"></div>
+      <button id="flyIndia" class="fly-btn" data-i="flyIndia"></button>
+
+      <!-- sanNchari-style 3D view: globe → India → state relief -->
+      <div id="stage3d" class="stage3d">
+        <canvas id="gl3d" aria-label="3D map of India"></canvas>
+        <div class="z3note" data-i="z3note"></div>
+        <div class="z3ctl">
+          <button id="z3in" aria-label="Zoom in">+</button>
+          <button id="z3out" aria-label="Zoom out">−</button>
+          <button id="z3pan" data-i="z3turn" aria-pressed="false"></button>
+          <button id="z3top" data-i="z3top"></button>
+          <button id="z3reset" data-i="z3reset"></button>
+          <button id="z3globe" data-i="z3globe"></button>
+        </div>
+        <label class="z3bar"><span><span data-i="z3zoomL"></span> <b id="z3zoomv">1.0×</b></span>
+          <input type="range" id="z3zoom" min="0" max="100" value="0" /></label>
+        <div id="z3tag" class="z3tag"></div>
+        <div class="z3explore">
+          <button id="z3explore" class="z3go"></button>
+          <p id="z3hint"></p>
+        </div>
+        <div id="z3tip" class="state-tip" hidden></div>
+        <div class="z3load"><span data-i="z3loading"></span></div>
+        <div id="card3d" class="card3d" hidden></div>
+        <p class="z3fail" hidden data-i="z3fail"></p>
+      </div>
+
+      <div class="view-toggle" role="group" aria-label="Map view">
+        <button id="view3d" class="on" data-i="view3d"></button>
+        <button id="viewSat" data-i="viewSat"></button>
+      </div>
+    </div>
   </main>
 
+  <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
   <script src="vendor/maplibre-gl.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>

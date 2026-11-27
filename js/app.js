@@ -17,7 +17,7 @@ const S = {
   from: null,                       // {name, lat, lng}
   pinned: [],                       // destination objects
   tripRegions: new Set(),
-  theme: "follow", mapStyle: "satellite", terrain: false, states3d: true,
+  theme: "follow", mapStyle: "satellite", terrain: false, states3d: true, view: "3d",
   lastTrip: null,
 };
 const $ = (s) => document.querySelector(s);
@@ -160,13 +160,15 @@ function paintStates() {
   map.getSource("state-names").setData(fc(Object.entries(STATES).map(([code, s]) => ({ type: "Feature",
     geometry: { type: "Point", coordinates: [s[5], s[4]] }, properties: { code, label: stateName(code) } }))));
 }
-function selectState(code, { fly = true } = {}) {
+function selectState(code, { fly = true, from3d = false } = {}) {
   S.state = code || "";
   if (S.state && S.region && STATES[S.state][3] !== S.region) S.region = "";
   fillSelects(); refresh(); paintStates();
+  if (M3 && !from3d) { closeCard(); S.state ? M3.open(S.state) : M3.globe(); }
   if (!S.state) return;
   popup?.remove();
-  if (fly) map.fitBounds(stateBounds(S.state), { padding: isMobile() ? 30 : 70, pitch: 45, bearing: -10, maxZoom: 8.5, duration: 2200 });
+  if (S.theme === "follow" && from3d) applyTheme(STATES[S.state][6]);
+  if (fly && S.view === "sat") map.fitBounds(stateBounds(S.state), { padding: isMobile() ? 30 : 70, pitch: 45, bearing: -10, maxZoom: 8.5, duration: 2200 });
   if (S.theme === "follow") applyTheme(STATES[S.state][6]);
 }
 // Globe projection can't hit-test extruded shapes, so find the state under the cursor ourselves.
@@ -278,6 +280,7 @@ function refresh() {
   if (src) src.setData(fc(list.map((d) => pt(d, { id: d.id, name: d.name, cat: d.cats[0], gem: d.gem ? 1 : 0, off: 0 }))));
   renderList(list);
   renderAds();
+  M3?.sync(list.map((d) => d.id));
 }
 
 // ─────────────────────────── rendering ───────────────────────────
@@ -304,7 +307,30 @@ function nearbyOf(d, n = 5, maxKm = 160) {
 }
 
 function openPopup(d, fly = true) {
+  if (S.view === "3d" && M3) return openCard(d, fly);
   if (fly) flyTo(d);
+  popup?.remove();
+  popup = new maplibregl.Popup({ offset: 12, maxWidth: "300px" }).setLngLat([d.lng, d.lat]).setHTML(popHTML(d)).addTo(map);
+  renderAds(popup.getElement());
+  popup.getElement().addEventListener("click", popClick);
+}
+function popClick(e) {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const x = DESTINATIONS[+el.dataset.id];
+  if (el.dataset.act === "pin") { togglePin(x); openPopup(x, false); }
+  if (el.dataset.act === "go") openPopup(x);
+}
+// 3D view: the same card, docked over the relief, while the camera flies to the landmark
+function openCard(d, fly = true) {
+  const card = $("#card3d");
+  card.innerHTML = `<button class="x" aria-label="Close">×</button>${popHTML(d)}`;
+  card.hidden = false;
+  renderAds(card);
+  if (fly) M3.focus(d);
+  if (S.theme === "follow") applyTheme(STATES[d.state][6]);
+}
+function closeCard() { const c = $("#card3d"); if (c) { c.hidden = true; c.innerHTML = ""; } M3?.clearSel(); }
+function popHTML(d) {
   const pinned = S.pinned.some((p) => p.id === d.id);
   const near = nearbyOf(d);
   const inSeason = S.month ? d.months.includes(S.month) : null;
@@ -324,15 +350,7 @@ function openPopup(d, fly = true) {
       ${near.length ? `<div class="near"><b>${t("nearby")}:</b> ${near.map(([x, k]) => `<a data-act="go" data-id="${x.id}">${esc(x.name)}${x.gem ? " 💎" : ""} (${k} km)</a>`).join(", ")}</div>` : ""}
       <div class="ad-slot" data-slot="popup" data-state="${d.state}" data-cats="${d.cats.join("")}"></div>
     </div>`;
-  popup?.remove();
-  popup = new maplibregl.Popup({ offset: 12, maxWidth: "300px" }).setLngLat([d.lng, d.lat]).setHTML(html).addTo(map);
-  renderAds(popup.getElement());
-  popup.getElement().addEventListener("click", (e) => {
-    const el = e.target.closest("[data-act]"); if (!el) return;
-    const x = DESTINATIONS[+el.dataset.id];
-    if (el.dataset.act === "pin") { togglePin(x); openPopup(x, false); }
-    if (el.dataset.act === "go") openPopup(x);
-  });
+  return html;
 }
 
 function flyTo(d) {
@@ -414,6 +432,7 @@ function renderItinerary(trip) {
 }
 
 function drawTrip({ stops, start }) {
+  if (S.view === "3d") setView("sat"); // routes are drawn on the satellite map
   if (!map.getSource("route")) return;
   const coords = [[start.lng, start.lat], ...stops.map((d) => [d.lng, d.lat])];
   map.getSource("route").setData(fc([{ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties: {} }]));
@@ -506,6 +525,7 @@ function applyLang() {
   $("#adMail").href = `mailto:${AD_CONTACT}?subject=${encodeURIComponent("Advertise on sanNchari Bharat")}`;
   fillSelects(); fillChips(); renderPinned(); renderFestivals(); refresh(); paintStates();
   if (S.lastTrip) renderItinerary(S.lastTrip);
+  M3?.relabel(); exploreLabel();
 }
 
 function bind() {
@@ -583,7 +603,55 @@ function bind() {
   $("#mapStyle").addEventListener("change", (e) => { S.mapStyle = e.target.value; popup?.remove(); map.setStyle(buildStyle(S.mapStyle)); });
   $("#terrain").addEventListener("change", (e) => { S.terrain = e.target.checked; setTerrain(S.terrain); });
   $("#menuBtn").addEventListener("click", () => $("#panel").classList.toggle("open"));
+  $("#view3d").addEventListener("click", () => setView("3d"));
+  $("#viewSat").addEventListener("click", () => setView("sat"));
+  $("#z3globe").addEventListener("click", () => selectState(""));
+  $("#z3explore").addEventListener("click", () => { if (!M3) return; if (picked) M3.dive(); else pickOnGlobe("KA"); });
+  $("#card3d").addEventListener("click", (e) => { if (e.target.closest(".x")) return closeCard(); popClick(e); });
   $("#flyIndia").addEventListener("click", () => { popup?.remove(); selectState("", { fly: false }); map.flyTo({ center: [80.5, 22], zoom: isMobile() ? 3.2 : 3.9, pitch: 0, bearing: 0, duration: 2000 }); });
+}
+
+// ─────────────────────────── 3D view (sanNchari-style) ───────────────────────────
+let M3 = null, picked = null;
+function setView(v) {
+  S.view = v;
+  document.body.classList.toggle("sat", v === "sat");
+  $("#view3d").classList.toggle("on", v === "3d");
+  $("#viewSat").classList.toggle("on", v === "sat");
+  if (v === "sat") { closeCard(); map.resize(); if (S.state) map.fitBounds(stateBounds(S.state), { padding: 60, pitch: 45, maxZoom: 8.5, duration: 0 }); }
+  else popup?.remove();
+}
+function exploreLabel() {
+  $("#z3explore").textContent = picked ? t("z3explore").replace("{s}", stateName(picked)) : t("z3pickIndia");
+  $("#z3hint").textContent = t("z3hint");
+}
+function pickOnGlobe(code) { picked = code; M3?.pick(code); exploreLabel(); }
+async function boot3D() {
+  try {
+    const [{ init3D }, world] = await Promise.all([import("./map3d/index.js"), fetch("data/world.json").then((r) => r.json())]);
+    const tip3 = $("#z3tip");
+    M3 = init3D({
+      stage: $("#stage3d"), canvas: $("#gl3d"), shapes: STATE_SHAPES, world, places: DESTINATIONS, cities: CITIES, stateName, t,
+      onPickState: pickOnGlobe,
+      onEnterState: (code) => { picked = code; exploreLabel(); if (S.state !== code) selectState(code, { fly: false, from3d: true }); },
+      onGlobe: () => { closeCard(); if (S.state) { S.state = ""; fillSelects(); refresh(); } },
+      onPlace: (id) => openCard(DESTINATIONS[id], true),
+      onHover: (code, e) => {
+        if (!code || !e) { tip3.hidden = true; return; }
+        const n = DESTINATIONS.filter((d) => d.state === code).length;
+        tip3.textContent = `${stateName(code)} · ${n} ${t("results")} — ${t("tapState")}`;
+        tip3.hidden = false;
+        tip3.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
+      },
+    });
+    pickOnGlobe(S.state || "KA");
+    refresh();
+    if (S.state) M3.open(S.state);
+  } catch (err) {
+    console.error(err);
+    $(".z3fail").hidden = false;
+    setTimeout(() => setView("sat"), 1500);
+  }
 }
 
 // ─────────────────────────── boot ───────────────────────────
@@ -594,6 +662,7 @@ $("#lang").value = S.lang;
 bind();
 applyLang();
 if (isMobile()) $("#panel").classList.add("open");
+if (hadTrip) setView("sat"); else boot3D();
 if (hadTrip) {
   document.querySelector('.tab[data-tab="trip"]').click();
   runPlanner();                      // the route is drawn as soon as the map style is ready

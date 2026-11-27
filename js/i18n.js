@@ -22,7 +22,7 @@ export const STR = {
     privacy: "No sign-up. No personal data collected or stored.", theme: "Art theme", mapStyle: "Globe look",
     satellite: "Satellite", street: "Map", night: "Night", terrain3d: "3D terrain", followState: "Follow the state",
     distanceNote: "Distances are straight-line × 1.3 for road estimate.", noResults: "No places match these filters.",
-    states3d: "3D state map", tapState: "tap to explore", reset: "Reset filters", flyIndia: "Whole India",
+    states3d: "3D state map", tapState: "tap to explore", z3note: "Simulated imagery, not satellite photos", z3turn: "TURN", z3move: "MOVE", z3top: "TOP", z3reset: "RESET", z3globe: "GLOBE", z3zoomL: "Zoom", z3loading: "Building the 3D relief…", z3fail: "3D view needs WebGL. Showing the satellite map instead.", view3d: "3D view", viewSat: "Satellite", z3explore: "Explore {s} ↘", z3pickIndia: "Tap a state to begin", z3hint: "Drag to turn the Earth. Tap any state to raise it; tap it again or press Explore to go in.", reset: "Reset filters", flyIndia: "Whole India",
   },
   kn: {
     tagline: "ಬನ್ನಿ, ಭಾರತ ನೋಡೋಣ",
@@ -46,7 +46,7 @@ export const STR = {
     privacy: "ನೋಂದಣಿ ಇಲ್ಲ. ಯಾವುದೇ ವೈಯಕ್ತಿಕ ಮಾಹಿತಿ ಸಂಗ್ರಹಿಸುವುದಿಲ್ಲ.", theme: "ಕಲಾ ಥೀಮ್", mapStyle: "ಗ್ಲೋಬ್ ನೋಟ",
     satellite: "ಉಪಗ್ರಹ", street: "ನಕ್ಷೆ", night: "ರಾತ್ರಿ", terrain3d: "3D ಭೂಪ್ರದೇಶ", followState: "ರಾಜ್ಯದ ಕಲೆ ಅನುಸರಿಸಿ",
     distanceNote: "ದೂರ = ನೇರ ದೂರ × 1.3 (ರಸ್ತೆ ಅಂದಾಜು).", noResults: "ಈ ಆಯ್ಕೆಗಳಿಗೆ ಸ್ಥಳಗಳಿಲ್ಲ.",
-    states3d: "3D ರಾಜ್ಯ ನಕ್ಷೆ", tapState: "ಒತ್ತಿ ನೋಡಿ", reset: "ಮರುಹೊಂದಿಸಿ", flyIndia: "ಇಡೀ ಭಾರತ",
+    states3d: "3D ರಾಜ್ಯ ನಕ್ಷೆ", tapState: "ಒತ್ತಿ ನೋಡಿ", z3note: "ಅನುಕರಿಸಿದ ಚಿತ್ರಣ, ಉಪಗ್ರಹ ಫೋಟೋ ಅಲ್ಲ", z3turn: "ತಿರುಗಿಸು", z3move: "ಸರಿಸು", z3top: "ಮೇಲೆ", z3reset: "ಮರುಹೊಂದಿಸು", z3globe: "ಭೂಗೋಳ", z3zoomL: "ಜೂಮ್", z3loading: "3D ಉಬ್ಬುಚಿತ್ರ ಸಿದ್ಧವಾಗುತ್ತಿದೆ…", z3fail: "3D ನೋಟಕ್ಕೆ WebGL ಬೇಕು. ಉಪಗ್ರಹ ನಕ್ಷೆ ತೋರಿಸಲಾಗುತ್ತಿದೆ.", view3d: "3D ನೋಟ", viewSat: "ಉಪಗ್ರಹ", z3explore: "{s} ನೋಡಿ ↘", z3pickIndia: "ಆರಂಭಿಸಲು ಒಂದು ರಾಜ್ಯ ಒತ್ತಿ", z3hint: "ಭೂಮಿಯನ್ನು ತಿರುಗಿಸಲು ಎಳೆಯಿರಿ. ರಾಜ್ಯವನ್ನು ಎತ್ತಲು ಒತ್ತಿ; ಒಳಗೆ ಹೋಗಲು ಮತ್ತೆ ಒತ್ತಿ ಅಥವಾ ನೋಡಿ ಒತ್ತಿ.", reset: "ಮರುಹೊಂದಿಸಿ", flyIndia: "ಇಡೀ ಭಾರತ",
   },
   hi: {
     tagline: "आइए, भारत देखें",
@@ -70,7 +70,7 @@ export const STR = {
     privacy: "कोई साइन-अप नहीं। कोई निजी जानकारी एकत्र या संग्रहीत नहीं।", theme: "कला थीम", mapStyle: "ग्लोब रूप",
     satellite: "उपग्रह", street: "नक्शा", night: "रात", terrain3d: "3D भू-भाग", followState: "राज्य की कला",
     distanceNote: "दूरी = सीधी दूरी × 1.3 (सड़क अनुमान)।", noResults: "इन फ़िल्टर से कोई जगह नहीं मिली।",
-    states3d: "3D राज्य नक्शा", tapState: "देखने के लिए टैप करें", reset: "रीसेट", flyIndia: "पूरा भारत",
+    states3d: "3D राज्य नक्शा", tapState: "देखने के लिए टैप करें", z3note: "अनुकरणीय चित्रण, उपग्रह फ़ोटो नहीं", z3turn: "घुमाएँ", z3move: "खिसकाएँ", z3top: "ऊपर", z3reset: "रीसेट", z3globe: "ग्लोब", z3zoomL: "ज़ूम", z3loading: "3D उभार बन रहा है…", z3fail: "3D दृश्य के लिए WebGL चाहिए। उपग्रह नक्शा दिखाया जा रहा है।", view3d: "3D दृश्य", viewSat: "उपग्रह", z3explore: "{s} देखें ↘", z3pickIndia: "शुरू करने के लिए कोई राज्य टैप करें", z3hint: "पृथ्वी घुमाने के लिए खींचें। किसी राज्य को उठाने के लिए टैप करें; अंदर जाने के लिए फिर टैप करें या देखें दबाएँ।", reset: "रीसेट", flyIndia: "पूरा भारत",
   },
 };
 
