@@ -96,8 +96,9 @@ Places are being added region by region from the official state tourism websites
 | 2 | North (UP, UK, HP, PB, HR, CH, DL, JK, LA) | ~180 | done |
 | 3 | Central & East (MP, CG, BR, JH, WB, OD) | ~120 | done |
 | 4 | North-East & Islands (AS, AR, NL, MN, MZ, TR, ML, SK, AN) | ~95 | done |
+| 5 | Official listings from the owner's reference doc: UNESCO, National Parks, ASI-protected monuments, Swadesh Darshan 1.0/2.0, PRASHAD (all states) | 847 | done |
 
-1,020 places in all. Coordinates are checked against the state boundary, OpenStreetMap (batch 1, partly)
+1,867 places in all. Batch 5 rows carry a source link, shown on the place card. Coordinates are checked against the state boundary, OpenStreetMap (batch 1, partly)
 and Wikipedia; places Wikipedia does not know are boundary-checked only, so report any pin that looks off.
 
 Boundaries: datta07/INDIAN-SHAPEFILES (Survey of India based).
