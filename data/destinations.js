@@ -11,6 +11,7 @@ import { WEST } from "./places/west.js";
 import { NORTH } from "./places/north.js";
 import { CENTRAL_EAST } from "./places/central-east.js";
 import { NORTHEAST } from "./places/northeast.js";
+import { OFFICIAL } from "./places/official.js";
 
 const RAW = [
   // ── Karnataka ──
@@ -334,7 +335,7 @@ export const GROUPS = {
 };
 
 // New batches are appended after the original rows so existing place numbers never change.
-export const DESTINATIONS = [...RAW, ...SOUTH, ...WEST, ...NORTH, ...CENTRAL_EAST, ...NORTHEAST].map((r, i) => ({
+export const DESTINATIONS = [...RAW, ...SOUTH, ...WEST, ...NORTH, ...CENTRAL_EAST, ...NORTHEAST, ...OFFICIAL].map((r, i) => ({
   id: i,
   name: r[0],
   state: r[1],
@@ -346,6 +347,7 @@ export const DESTINATIONS = [...RAW, ...SOUTH, ...WEST, ...NORTH, ...CENTRAL_EAS
   access: r[6],
   note: r[7],
   gem: r[8] === 1,
+  src: r[9] || "",
 }));
 
 function parseMonths(s) {

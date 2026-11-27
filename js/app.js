@@ -346,7 +346,7 @@ function popHTML(d) {
         ${S.from ? ` · ${roadKm(S.from, d)} ${t("kmAway")}` : ""}</div>
       <div class="btns">
         <button class="add" data-act="pin" data-id="${d.id}">${pinned ? t("removeTrip") : t("addTrip")}</button>
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}" target="_blank" rel="noopener">🧭 Maps</a>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}" target="_blank" rel="noopener">🧭 Maps</a>${d.src && /^https:\/\//.test(d.src) ? ` <a href="${esc(d.src)}" target="_blank" rel="noopener" class="src-link">📜 ${t("source")}</a>` : ""}
       </div>
       ${near.length ? `<div class="near"><b>${t("nearby")}:</b> ${near.map(([x, k]) => `<a data-act="go" data-id="${x.id}">${esc(x.name)}${x.gem ? " 💎" : ""} (${k} km)</a>`).join(", ")}</div>` : ""}
       <div class="ad-slot" data-slot="popup" data-state="${d.state}" data-cats="${d.cats.join("")}"></div>
