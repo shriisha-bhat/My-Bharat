@@ -11,7 +11,7 @@ export const NORTHEAST = [
   ["Pobitora Sanctuary", "AS", 26.2333, 92.05, "W", "11-4", "e", "Dense rhino population near Guwahati"],
   ["Hajo", "AS", 26.2456, 91.5272, "D", "10-4", "e", "Hill shrines sacred to three faiths", 1],
   ["Sualkuchi", "AS", 26.17, 91.57, "H", "10-4", "e", "Muga and pat silk weaving village", 1],
-  ["Madan Kamdev", "AS", 26.315, 91.86, "H", "10-4", "e", "Ruined temples hidden in the forest", 1],
+  ["Madan Kamdev", "AS", 26.3197, 91.7408, "H", "10-4", "e", "Ruined temples hidden in the forest", 1],
   ["Haflong", "AS", 25.17, 93.0167, "MC", "10-4", "m", "Assam's only hill station, Dima Hasao", 1],
   ["Nameri National Park", "AS", 26.95, 92.85, "WA", "11-4", "m", "Rafting the Jia Bhoroli, birding", 1],
   ["Dibru-Saikhowa", "AS", 27.6, 95.4, "W", "11-4", "m", "Feral horses on river islands", 1],
@@ -29,7 +29,7 @@ export const NORTHEAST = [
   ["Bomdila", "AR", 27.2645, 92.4159, "MD", "3-6", "m", "Monasteries on the road to Tawang"],
   ["Dirang", "AR", 27.3583, 92.24, "MC", "3-11", "m", "Hot springs and kiwi orchards"],
   ["Madhuri (Sangetsar) Lake", "AR", 27.69, 91.89, "MC", "4-10", "t", "High lake with drowned tree stumps", 1],
-  ["Bum La Pass", "AR", 27.75, 91.92, "AB", "4-10", "t", "Border pass at 4,600 m, permit only", 1],
+  ["Bum La Pass", "AR", 27.7237, 91.8916, "AB", "4-10", "t", "Border pass at 4,600 m, permit only", 1],
   ["Tawang War Memorial", "AR", 27.585, 91.865, "H", "3-10", "m", "Memorial to the 1962 war"],
   ["Namdapha National Park", "AR", 27.5, 96.4, "WA", "10-4", "t", "Four big cats in one rainforest", 1],
   ["Pasighat", "AR", 28.0667, 95.3333, "CA", "10-4", "m", "Oldest town, the Siang river rapids"],
@@ -61,7 +61,7 @@ export const NORTHEAST = [
   ["Mokokchung", "NL", 26.3243, 94.5139, "HC", "10-5", "m", "Ao Naga heartland", 1],
   ["Longwa (Mon)", "NL", 26.65, 95.2, "HC", "10-4", "t", "Village split by the Myanmar border", 1],
   ["Dimapur Kachari Ruins", "NL", 25.9, 93.73, "H", "10-4", "e", "Mushroom-shaped monoliths"],
-  ["Shilloi Lake", "NL", 25.69, 94.92, "C", "10-5", "t", "Foot-shaped lake in Phek", 1],
+  ["Shilloi Lake", "NL", 25.5954, 94.793, "C", "10-5", "t", "Foot-shaped lake in Phek", 1],
   ["Pfutsero", "NL", 25.57, 94.29, "MC", "10-5", "m", "Highest town in Nagaland", 1],
 
   // ── Manipur ──
@@ -78,7 +78,7 @@ export const NORTHEAST = [
   // ── Mizoram ──
   ["Champhai", "MZ", 23.4667, 93.3333, "MC", "10-4", "m", "Vineyards and the Rih Dil lake beyond", 1],
   ["Phawngpui (Blue Mountain)", "MZ", 22.6333, 93.0333, "AM", "10-4", "t", "Mizoram's highest peak", 1],
-  ["Vantawng Falls", "MZ", 23.08, 92.75, "W", "8-12", "m", "Tallest falls in Mizoram", 1],
+  ["Vantawng Falls", "MZ", 23.2569, 92.7625, "W", "8-12", "m", "Tallest falls in Mizoram", 1],
   ["Dampa Tiger Reserve", "MZ", 23.6, 92.4, "W", "11-4", "m", "Remote forest on the Bangladesh border", 1],
   ["Tamdil Lake", "MZ", 23.73, 92.95, "C", "10-4", "e", "Forest lake east of Aizawl", 1],
   ["Lunglei", "MZ", 22.88, 92.73, "MC", "10-4", "m", "Town on a ridge 'like a bridge of rock'", 1],

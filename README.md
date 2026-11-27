@@ -7,7 +7,8 @@ The all-India edition of [sanNchari](https://www.sannchari.com): a 3D travel glo
 ## Features
 
 - **3D globe** (MapLibre GL, globe projection) with satellite, map and night looks, plus an optional **3D terrain** mode
-- **3D state map**: every state and UT is a raised block on official (Survey of India based) boundaries. Hover for its name and place count; click to raise it, outline it, tilt into it and filter the list. Toggle it in the panel footer
+- **sanNchari 3D view** (default): a painted globe opens on India; tap any state to raise it, tap again or press Explore to dive into a relief map of that state with a landmark model for every place, district names, TURN / TOP / RESET / GLOBE controls and a 1–100x zoom. The relief is built in the browser from Terrarium elevation tiles with simulated colours (forest, farmland, desert, snow, coast). Switch to **Satellite** for the MapLibre map, which also draws trip routes
+- **3D state map** (satellite view): every state and UT is a raised block on official (Survey of India based) boundaries. Hover for its name and place count; click to raise it, outline it, tilt into it and filter the list. Toggle it in the panel footer
 - **Destinations across India**: famous hubs plus 💎 *hidden gems* (lesser-visited places near each hub)
 - **Categories**: devotional, heritage, chill-out, bike ride, family hangout, wildlife, beach, hills, adventure
 - **Traveller groups** (multi-select): solo biker, biker group, family, couple, girls' gang, boys' gang, young group, elders, travelling with a feeding baby. Elders and baby filters hide high-altitude or tough-access places
@@ -33,7 +34,10 @@ js/i18n.js            EN / KN / HI strings
 data/states.js        36 states & UTs (names in 3 languages, region, centre, theme)
 data/destinations.js  original destination dataset (one row per place, format documented at the top)
 data/places/*.js      added places in regional batches (south.js, west.js, …), appended after the original rows
-data/india-states.js  simplified state & UT boundaries for the 3D state map
+data/india-states.js  simplified state & UT boundaries
+data/districts/*.json district boundaries per state (loaded when that state opens)
+data/world.json       world outlines for the globe (Natural Earth)
+js/map3d/             the 3D view, ported from sanNchari (three.js r128 in vendor/three/)
 data/festivals.js     festivals by month
 data/cities.js        starting cities
 data/ads.js           ad slots, edit this to sell ads
@@ -86,11 +90,14 @@ Contact for ads and suggestions: **contact.sannchari@gmail.com**
 
 Places are being added region by region from the official state tourism websites plus local favourites and hidden gems. Every coordinate is checked against the state boundary and against OpenStreetMap.
 
-| Batch | States | Status |
-|---|---|---|
-| 1 | South (KA, KL, TN, AP, TS, PY, LD) and West (GA, MH, GJ, RJ, DN) | done |
-| 2 | North (UP, UK, HP, PB, HR, CH, DL, JK, LA) | to do |
-| 3 | Central & East (MP, CG, BR, JH, WB, OD) | to do |
-| 4 | North-East & Islands (AS, AR, NL, MN, MZ, TR, ML, SK, AN) | to do |
+| Batch | States | Places added | Status |
+|---|---|---|---|
+| 1 | South (KA, KL, TN, AP, TS, PY, LD) and West (GA, MH, GJ, RJ, DN) | ~400 | done |
+| 2 | North (UP, UK, HP, PB, HR, CH, DL, JK, LA) | ~180 | done |
+| 3 | Central & East (MP, CG, BR, JH, WB, OD) | ~120 | done |
+| 4 | North-East & Islands (AS, AR, NL, MN, MZ, TR, ML, SK, AN) | ~95 | done |
+
+1,020 places in all. Coordinates are checked against the state boundary, OpenStreetMap (batch 1, partly)
+and Wikipedia; places Wikipedia does not know are boundary-checked only, so report any pin that looks off.
 
 Boundaries: datta07/INDIAN-SHAPEFILES (Survey of India based).
