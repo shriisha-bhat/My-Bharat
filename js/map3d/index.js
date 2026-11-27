@@ -134,7 +134,8 @@ export function init3D(o) {
     const cl = cities
       .filter(([, la, lo]) => lo > gbox[0] && lo < gbox[2] && la > gbox[1] && la < gbox[3])
       .map(([n, la, lo]) => [lo, la, BIG.test(n) ? 0.13 : 0.05]);
-    const terr = createTerrain(scene, hf, noise, buildMask(rings, districts, hf), buildFade(rings, hf), climateCanvas(gbox), cl);
+    const others = shapes.features.filter((g) => g !== f).filter((g) => { const b = bboxOf(g); return b[0] < gbox[2] && b[2] > gbox[0] && b[1] < gbox[3] && b[3] > gbox[1]; }).map((g) => polysOf(g).flatMap((p) => p));
+    const terr = createTerrain(scene, hf, noise, buildMask(rings, districts, hf, others), buildFade(rings, hf), climateCanvas(gbox), cl);
     [terr.patch, terr.coarse].forEach((m) => (m.material.uniforms.uLight.value = 0));
 
     const pins = places.filter((d) => d.state === code).map((d) => {
@@ -147,7 +148,9 @@ export function init3D(o) {
       return g;
     });
     const placeL = pins.map((g) => { const s = label(g.userData.d.name, g.userData.d.lng, g.userData.d.lat, 0.022, "#ffe9a8", yAt); s.visible = false; scene.add(s); return s; });
-    const distL = districts.map((d) => { const s = label(d.n, d.c[0], d.c[1], 0.024, "#f4f1e4", yAt); scene.add(s); return s; });
+    const area = (d) => d.r.reduce((a, r) => { let s = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) s += r[j][0] * r[i][1] - r[i][0] * r[j][1]; return a + Math.abs(s / 2); }, 0);
+    const rank = new Map([...districts].sort((a, b) => area(b) - area(a)).map((d, i) => [d, i]));
+    const distL = districts.map((d) => { const s = label(d.n, d.c[0], d.c[1], 0.024, "#f4f1e4", yAt); s.userData.rank = rank.get(d); scene.add(s); return s; });
     const stL = label(stateName(code), (box[0] + box[2]) / 2, box[3] + (box[3] - box[1]) * 0.04, 0.034, "#ffd34d", yAt);
     scene.add(stL);
     ST = { code, terr, pins, placeL, distL, stL, yAt, box, ty: 0 };
@@ -247,7 +250,8 @@ export function init3D(o) {
       l.visible = near && g.visible && sel !== g.userData.d.id;
       if (l.visible) l.position.y = g.position.y + ms * 5.2;
     });
-    ST.distL.forEach((l) => { l.visible = !near; l.position.y = (l.userData.hm + lift) * ex + 0.9; });
+    const many = c.r > 60 ? 14 : c.r > 40 ? 26 : 99;
+    ST.distL.forEach((l) => { l.visible = !near && l.userData.rank < many; l.position.y = (l.userData.hm + lift) * ex + 0.9; });
     ST.stL.position.y = (lift) * ex + 2.5;
     ST.stL.visible = c.r > 50;
     R.render(scene, cam);

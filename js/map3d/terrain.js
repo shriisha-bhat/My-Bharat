@@ -81,7 +81,7 @@ function trace(x, rings, X, Y) {
 }
 
 /** Mask canvas: B sea (from elevation), R inside the state, G district borders. */
-export function buildMask(rings, districts, hf) {
+export function buildMask(rings, districts, hf, others = []) {
   const { G, lonSpan, latSpan, nx, ny, seaB } = hf;
   const mc = document.createElement("canvas");
   mc.width = 1280;
@@ -99,9 +99,33 @@ export function buildMask(rings, districts, hf) {
   sx.putImageData(im, 0, 0);
   x.imageSmoothingEnabled = true;
   x.drawImage(sc, 0, 0, mc.width, mc.height);
-  trace(x, rings, X, Y);
-  x.fillStyle = "rgb(255,0,0)";
-  x.fill("evenodd");
+  // the state: its outline, widened a little so it reaches the real coastline (the outline is
+  // simplified), but never into the sea or a neighbouring state
+  const tc = document.createElement("canvas");
+  tc.width = mc.width; tc.height = mc.height;
+  const t = tc.getContext("2d");
+  trace(t, rings, X, Y);
+  t.fillStyle = t.strokeStyle = "rgb(255,0,0)";
+  t.fill("evenodd");
+  t.lineWidth = Math.max(4, mc.width * 0.006);
+  t.lineJoin = "round";
+  t.stroke();
+  t.globalCompositeOperation = "destination-out";
+  for (const o of others) { trace(t, o, X, Y); t.fill("evenodd"); }
+  const sea2 = document.createElement("canvas");
+  sea2.width = mc.width; sea2.height = mc.height;
+  const s2 = sea2.getContext("2d"), si = s2.createImageData(nx, ny);
+  for (let k = 0; k < nx * ny; k++) { const j = Math.floor(k / nx), i = k % nx, q = ((ny - 1 - j) * nx + i) * 4; si.data[q + 3] = seaB[k]; }
+  const sc2 = document.createElement("canvas");
+  sc2.width = nx; sc2.height = ny;
+  sc2.getContext("2d").putImageData(si, 0, 0);
+  t.drawImage(sc2, 0, 0, mc.width, mc.height);
+  trace(t, rings, X, Y);
+  t.globalCompositeOperation = "source-over";
+  t.fill("evenodd");
+  x.globalCompositeOperation = "source-over";
+  x.drawImage(tc, 0, 0);
+  // inside the state there is no sea (lakes and backwaters stay land-coloured by the shader)
   x.globalCompositeOperation = "lighter";
   x.strokeStyle = "rgb(0,255,0)";
   x.lineWidth = 1.4;
